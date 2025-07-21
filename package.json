@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.10.0",
+    "deepseek-api": "^1.0.6",
+    "ws": "^8.18.3",
+    "zustand": "^5.0.6"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
