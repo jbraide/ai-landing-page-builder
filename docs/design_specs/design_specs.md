@@ -76,7 +76,7 @@ app/
    - Model-specific optimizations (DeepSeek/Gemini)
 
 2. **Real-time Rendering:**
-   - WebSocket connection for instant updates
+   - HTTP requests for instant updates
    - Next.js Fast Refresh integration
    - Component-level hot reloading
 
@@ -132,10 +132,13 @@ app/
 ## Integration Points
 ```mermaid
 sequenceDiagram
-    User->>+AI Router: "Add dark mode toggle"
+    User->>+Frontend: "Add dark mode toggle"
+    Frontend->>+HTTP Server: POST /generate (prompt, model)
+    HTTP Server->>+AI Router: Code generation request
     AI Router->>+DeepSeek: Code generation request
-    DeepSeek->>+Component Library: Generates ThemeToggle.tsx
-    Component Library->>+Next.js: Updates layout.tsx
+    DeepSeek->>+HTTP Server: Generated code
+    HTTP Server->>+Frontend: Component code
+    Frontend->>+Next.js: Updates component in local state
     Next.js->>+Preview: Live reload
     Preview-->>-User: Updated interface
 ```

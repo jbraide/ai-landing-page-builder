@@ -2,15 +2,26 @@
 
 ## Best Practices & Lessons Learned
 
-### 1. WebSocket Implementation
-- **Lesson**: Always handle WebSocket reconnections gracefully
+### 1. AI Service Communication (HTTP)
+- **Lesson**: Use standard HTTP POST requests for AI generation.
 - **Best Practice**:
-  ```javascript
-  // Implement exponential backoff for reconnections
-  const reconnect = () => {
-    const delay = Math.min(1000 * 2 ** attempts, 30000);
-    setTimeout(connect, delay);
-  };
+  ```typescript
+  // Example for calling AI generation via HTTP
+  async function generateComponentHttp(prompt: string, model: ModelType) {
+    const response = await fetch('http://localhost:3001/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt, model }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to generate component');
+    }
+    const data = await response.json();
+    return data.componentCode;
+  }
   ```
 
 ### 2. AI Model Integration
@@ -120,13 +131,13 @@
   ```
 
 ### 10. Deployment Considerations
-- **Lesson**: WebSocket servers require different scaling
+- **Lesson**: HTTP AI service should be deployed as a dedicated microservice.
 - **Best Practice**:
   ```markdown
   Production Architecture:
   - Frontend: Vercel
-  - WebSocket: Dedicated Node.js server (or serverless WebSockets)
-  - AI Services: Edge functions for low-latency responses
+  - AI Generation Service: Dedicated Node.js server (e.g., on a VPS or containerized)
+  - AI Services: Edge functions for low-latency responses (if applicable)
   ```
 
 ## Checklist Before Committing
@@ -147,9 +158,9 @@
    ❌ `const API_KEY = 'sk-12345'`  
    ✅ Use environment variables with .env.local
 
-2. **Blocking UI on AI responses**  
-   ❌ `await generateComponent()`  
-   ✅ Use WebSockets for async updates
+2. **Blocking UI on AI responses**
+   ❌ `await generateComponent()`
+   ✅ Use asynchronous HTTP requests with proper loading states
 
 3. **Trusting AI output without validation**  
    ❌ `eval(aiResponse)`  
