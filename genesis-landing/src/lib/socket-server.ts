@@ -133,7 +133,7 @@ server.listen(PORT, () => {
 });
 
 // Export for Next.js API route integration
-export default wss;
+export { wss };
 ```
 
 This WebSocket server implementation:

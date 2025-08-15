@@ -1,25 +1,14 @@
 // landingpage-builder/genesis-landing/src/app/api/ws/route.ts
 import { NextRequest } from 'next/server';
-import { wss } from '@/lib/socket-server';
 
 export async function GET(request: NextRequest) {
-  try {
-    // Check if WebSocket upgrade request
-    if (request.headers.get('upgrade') !== 'websocket') {
-      return new Response('Expected WebSocket upgrade request', { status: 400 });
-    }
-
-    // Handle WebSocket upgrade
-    const { socket, response } = Deno.upgradeWebSocket(request);
-    wss.handleUpgrade(request, socket as any, Buffer.alloc(0), (ws) => {
-      wss.emit('connection', ws, request);
-    });
-
-    return response;
-  } catch (error) {
-    console.error('WebSocket upgrade error:', error);
-    return new Response('WebSocket upgrade failed', { status: 500 });
-  }
+  // WebSocket connections are handled by the separate WebSocket server
+  // This endpoint provides information about the WebSocket server
+  return Response.json({
+    message: 'WebSocket server running on port 8080',
+    endpoint: 'ws://localhost:8080',
+    status: 'active'
+  });
 }
 ```
 
