@@ -26,7 +26,7 @@ interface AIState {
 }
 
 interface AIContextType extends AIState {
-  sendPrompt: (prompt: string) => void;
+  sendPrompt: (prompt: string) => Promise<void>;
   switchModel: (model: "deepseek" | "gemini") => void;
   clearConversation: () => void;
 }
@@ -48,15 +48,33 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
     // Generate a unique session ID for this conversation
     const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-    // Connect to WebSocket server
+    // Set session ID immediately for HTTP fallback
+    setState((prev) => ({
+      ...prev,
+      sessionId,
+    }));
+
+    // Try to connect to WebSocket server with timeout
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080";
     const ws = new WebSocket(wsUrl);
+    
+    // Set a timeout to fallback to HTTP mode if WebSocket doesn't connect
+    const connectionTimeout = setTimeout(() => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        console.log("WebSocket connection timeout, using HTTP API mode");
+        ws.close();
+        setState((prev) => ({
+          ...prev,
+          isConnected: false,
+        }));
+      }
+    }, 2000); // 2 second timeout
 
     ws.onopen = () => {
+      clearTimeout(connectionTimeout);
       setState((prev) => ({
         ...prev,
         isConnected: true,
-        sessionId,
       }));
       console.log("WebSocket connected");
     };
@@ -117,16 +135,18 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
     };
 
     ws.onclose = () => {
+      clearTimeout(connectionTimeout);
       setState((prev) => ({
         ...prev,
         isConnected: false,
         isLoading: false,
       }));
-      console.log("WebSocket disconnected");
+      console.log("WebSocket disconnected, using HTTP API mode");
     };
 
     ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      clearTimeout(connectionTimeout);
+      console.log("WebSocket connection failed, using HTTP API fallback");
       setState((prev) => ({
         ...prev,
         isConnected: false,
@@ -138,14 +158,15 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
 
     // Clean up on unmount
     return () => {
+      clearTimeout(connectionTimeout);
       if (ws.readyState === WebSocket.OPEN) {
         ws.close();
       }
     };
   }, []);
 
-  const sendPrompt = (prompt: string) => {
-    if (!socket || !state.isConnected || !state.sessionId) return;
+  const sendPrompt = async (prompt: string) => {
+    if (!state.sessionId) return;
 
     // Add user message to state
     const userMessage: AIMessage = {
@@ -161,15 +182,81 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
       isLoading: true,
     }));
 
-    // Send prompt to server
-    socket.send(
-      JSON.stringify({
-        type: "prompt",
-        prompt,
-        model: state.currentModel,
-        sessionId: state.sessionId,
-      }),
-    );
+    try {
+      if (socket && state.isConnected) {
+        // Use WebSocket if connected
+        socket.send(
+          JSON.stringify({
+            type: "prompt",
+            prompt,
+            model: state.currentModel,
+            sessionId: state.sessionId,
+          }),
+        );
+      } else {
+        // Fallback to HTTP API
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt,
+            model: state.currentModel,
+            sessionId: state.sessionId,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            messages: [
+              ...prev.messages,
+              {
+                id: `msg-${Date.now()}`,
+                role: "assistant",
+                content: "Here is the generated component:",
+                timestamp: new Date(),
+                model: prev.currentModel,
+                componentCode: data.component.code,
+              },
+            ],
+          }));
+        } else {
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            messages: [
+              ...prev.messages,
+              {
+                id: `msg-${Date.now()}`,
+                role: "assistant",
+                content: `Error: ${data.error}`,
+                timestamp: new Date(),
+              },
+            ],
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error sending prompt:', error);
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        messages: [
+          ...prev.messages,
+          {
+            id: `msg-${Date.now()}`,
+            role: "assistant",
+            content: `Error: Failed to generate component - ${error instanceof Error ? error.message : 'Unknown error'}`,
+            timestamp: new Date(),
+          },
+        ],
+      }));
+    }
   };
 
   const switchModel = (model: "deepseek" | "gemini") => {
