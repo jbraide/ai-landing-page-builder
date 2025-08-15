@@ -21,15 +21,15 @@ const ChatInterface: React.FC = () => {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 rounded-lg border border-gray-200">
+    <div className="flex flex-col h-full bg-white">
       {/* Chat header */}
-      <div className="p-4 border-b border-gray-200 bg-white rounded-t-lg">
+      <div className="p-4 border-b border-gray-200 bg-white">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">AI Chat Builder</h2>
           <div className="flex items-center space-x-2">
-            <span className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+            <span className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-blue-500'}`}></span>
             <span className="text-sm text-gray-500">
-              {isConnected ? 'Connected' : 'Disconnected'}
+              {isConnected ? 'WebSocket' : 'HTTP API'}
             </span>
           </div>
         </div>
@@ -125,13 +125,13 @@ const ChatInterface: React.FC = () => {
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type your prompt here..."
             className="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={isLoading || !isConnected}
+            disabled={isLoading}
           />
           <button
             type="submit"
-            disabled={isLoading || !isConnected || !inputValue.trim()}
+            disabled={isLoading || !inputValue.trim()}
             className={`px-4 py-2 rounded-r-lg ${
-              isLoading || !isConnected || !inputValue.trim()
+              isLoading || !inputValue.trim()
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
@@ -150,7 +150,7 @@ const ChatInterface: React.FC = () => {
           </button>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          {!isConnected ? 'Connecting to AI service...' : 'Press Enter to send'}
+          {isConnected ? 'WebSocket mode - Press Enter to send' : 'HTTP API mode - Press Enter to send'}
         </p>
       </form>
     </div>

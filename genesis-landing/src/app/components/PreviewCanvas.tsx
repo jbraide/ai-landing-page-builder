@@ -1,75 +1,23 @@
 // landingpage-builder/genesis-landing/src/app/components/PreviewCanvas.tsx
 import React, { useState, useEffect } from 'react';
 import { useAI } from '@/lib/ai-context';
+import DynamicComponentRenderer from './DynamicComponentRenderer';
 
 const PreviewCanvas: React.FC = () => {
   const { messages } = useAI();
   const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [previewHtml, setPreviewHtml] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-  const [activeComponent, setActiveComponent] = useState<string | null>(null);
-
-  // Extract component code from messages
-  useEffect(() => {
-    const components = messages
-      .filter(msg => msg.componentCode)
-      .map(msg => msg.componentCode)
-      .join('\n\n');
-
-    // Basic HTML structure with injected components
-    const html = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Landing Page Preview</title>
-        <style>
-          body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-          }
-          .component {
-            position: relative;
-            border: 2px solid transparent;
-            transition: border-color 0.3s;
-          }
-          .component:hover {
-            border-color: #0070f3;
-          }
-          .component::after {
-            content: attr(data-model);
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(0, 112, 243, 0.8);
-            color: white;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 10px;
-          }
-        </style>
-      </head>
-      <body>
-        ${components || '<div class="empty-state">No components generated yet</div>'}
-      </body>
-      </html>
-    `;
-
-    setPreviewHtml(html);
-  }, [messages]);
 
   // Device view dimensions
   const deviceDimensions = {
-    desktop: { width: '100%', height: '100%' },
-    tablet: { width: '768px', height: '1024px' },
-    mobile: { width: '375px', height: '667px' },
+    desktop: { width: '100%', minHeight: 'auto' },
+    tablet: { width: '768px', minHeight: 'auto' },
+    mobile: { width: '375px', minHeight: 'auto' },
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-100 rounded-lg border border-gray-200">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Preview header */}
-      <div className="p-3 border-b border-gray-200 bg-white rounded-t-lg flex justify-between items-center">
+      <div className="p-3 border-b border-gray-200 bg-white flex justify-between items-center">
         <h2 className="text-lg font-semibold">Live Preview</h2>
 
         {/* Device selector */}
@@ -105,45 +53,31 @@ const PreviewCanvas: React.FC = () => {
       </div>
 
       {/* Preview area */}
-      <div className="flex-grow overflow-auto p-4 flex justify-center items-start">
-        {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 w-full">
-            <div className="flex items-center text-red-700">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <span className="font-medium">Preview Error</span>
-            </div>
-            <p className="mt-2 text-red-600">{error}</p>
-          </div>
-        ) : (
-          <div
-            className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-lg"
-            style={{
-              width: deviceDimensions[deviceView].width,
-              height: deviceDimensions[deviceView].height,
-              transition: 'all 0.3s ease'
-            }}
-          >
-            <iframe
-              srcDoc={previewHtml}
-              title="Preview Canvas"
-              className="w-full h-full border-0"
-              sandbox="allow-same-origin allow-scripts"
-              onLoad={() => setError(null)}
-              onError={(e) => setError('Failed to load preview')}
-            />
-          </div>
-        )}
+      <div className="flex-grow overflow-auto p-4">
+        <div
+          className="mx-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-lg transition-all duration-300"
+          style={{
+            width: deviceDimensions[deviceView].width,
+            minHeight: deviceDimensions[deviceView].minHeight,
+          }}
+        >
+          <DynamicComponentRenderer
+            componentCode={messages
+              .filter(msg => msg.componentCode)
+              .map(msg => msg.componentCode)
+              .join('\n\n')}
+            className="w-full h-full"
+          />
+        </div>
       </div>
 
       {/* Status bar */}
       <div className="p-2 border-t border-gray-200 bg-white text-xs text-gray-500 flex justify-between">
         <div>
-          {activeComponent ? `Active: ${activeComponent}` : 'Hover over components'}
+          React Component Preview
         </div>
         <div>
-          Next.js 14 | {deviceView} view
+          Next.js 15 | {deviceView} view
         </div>
       </div>
     </div>
@@ -151,17 +85,3 @@ const PreviewCanvas: React.FC = () => {
 };
 
 export default PreviewCanvas;
-```
-
-This PreviewCanvas component:
-1. Displays a live preview of generated components in an iframe
-2. Supports device toggles for desktop/tablet/mobile views
-3. Shows component outlines when hovered (via CSS in the iframe)
-4. Includes model attribution for each generated component
-5. Handles preview errors with user-friendly messages
-6. Maintains a status bar with context information
-7. Uses responsive design and smooth transitions
-8. Provides visual feedback for active components
-9. Uses a sandboxed iframe for security
-
-The component integrates with our AI context to display components generated by DeepSeek or Gemini models. The preview updates automatically as new components are generated through the chat interface.
