@@ -7,14 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "socket": "node scripts/run-socket-server.js",
-    "dev:full": "concurrently \"npm run socket\" \"npm run dev\""
+    "http-server": "npx ts-node scripts/run-socket-server.ts",
+    "dev:full": "concurrently \"npm run http-server\" \"npm run dev\"",
+    "dev:simple": "next dev"
   },
   "dependencies": {
     "dotenv": "^17.2.0",
     "next": "15.4.2",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -22,9 +24,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.5.12",
+    "concurrently": "^9.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.2",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
