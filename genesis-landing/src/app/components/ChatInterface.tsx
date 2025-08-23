@@ -5,7 +5,18 @@ import { useAI } from '@/lib/ai-context';
 const ChatInterface: React.FC = () => {
   const { messages, sendPrompt, isLoading, isConnected, currentModel, switchModel } = useAI();
   const [inputValue, setInputValue] = useState('');
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const copyToClipboard = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,26 +95,61 @@ const ChatInterface: React.FC = () => {
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${
+                className={`max-w-[80%] rounded-lg p-3 relative group ${
                   message.role === 'user'
                     ? 'bg-blue-100 border border-blue-200'
                     : 'bg-white border border-gray-200'
                 }`}
               >
-                <div className="flex items-center mb-1">
-                  <span className="font-medium">
-                    {message.role === 'user' ? 'You' : currentModel === 'deepseek' ? 'DeepSeek' : 'Gemini'}
-                  </span>
-                  <span className="ml-2 text-xs text-gray-500">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center">
+                    <span className="font-medium">
+                      {message.role === 'user' ? 'You' : currentModel === 'deepseek' ? 'DeepSeek' : 'Gemini'}
+                    </span>
+                    <span className="ml-2 text-xs text-gray-500">
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  
+                  {/* Copy button */}
+                  <button
+                    onClick={() => copyToClipboard(message.componentCode || message.content, message.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
+                    title="Copy message"
+                  >
+                    {copiedMessageId === message.id ? (
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
 
                 {message.componentCode ? (
                   <div className="mt-2">
                     <p>{message.content}</p>
-                    <div className="mt-2 bg-gray-800 text-gray-100 p-3 rounded-md overflow-x-auto text-sm">
+                    <div className="mt-2 bg-gray-800 text-gray-100 p-3 rounded-md overflow-x-auto text-sm relative">
                       <pre>{message.componentCode}</pre>
+                      {/* Dedicated copy button for code */}
+                      <button
+                        onClick={() => copyToClipboard(message.componentCode!, message.id + '-code')}
+                        className="absolute top-2 right-2 p-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 hover:text-white transition-colors"
+                        title="Copy code"
+                      >
+                        {copiedMessageId === message.id + '-code' ? (
+                          <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </button>
                     </div>
                   </div>
                 ) : (
