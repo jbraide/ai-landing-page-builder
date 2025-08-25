@@ -12,15 +12,18 @@
     "dev:simple": "next dev"
   },
   "dependencies": {
+    "@babel/standalone": "^7.28.3",
     "dotenv": "^17.2.0",
     "next": "15.4.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-live": "^4.1.8",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/babel__standalone": "^7.1.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
